@@ -1,12 +1,12 @@
-import streamlit as st
+import numpy as np
 import pandas as pd
+import streamlit as st
+import pickle
+
 from unidecode import unidecode
 from datetime import datetime
 import ast
-import importlib
-import numpy as np
 from geopy.geocoders import Nominatim
-import pickle
 from sklearn.preprocessing import StandardScaler, RobustScaler
 
 
@@ -273,8 +273,6 @@ selectors_and_columns3 = {
 selectors_and_columns4 = {
     'totalmente_mobiliado': [st.pills, 'O imóvel é totalmente mobiliado?']
 }
-
-
 
 selectors_and_columns5 = {
     'piscina': [st.pills, 'Condomínio possui piscina?'],
