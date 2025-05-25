@@ -5,4 +5,3 @@ Unidecode
 DateTime
 geopy
 scikit-learn
-pickle

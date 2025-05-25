@@ -79,7 +79,6 @@ def get_dados_wikipedia(data):
 
     return data
 
-
 def get_lat_long(lat_long, coordenada):
     if lat_long:
         try: 
