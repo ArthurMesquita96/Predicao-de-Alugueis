@@ -245,7 +245,7 @@ def preparacao_dos_dados(df, dict_preparation, is_train=True):
 st.set_page_config(page_title="Predição de Alugueis", layout='wide')
 
 st.header('🏠 Estimação do valor de locação')
-st.write('✍️ Preencha os dados referentes ao imóveis para realizarmos a estimação do valor de locação:')
+st.write('✍️ Preencha os dados referentes ao imóvel para realizarmos a estimação do valor de locação:')
 
 
 df = pd.read_pickle('params/data/df_exp.pkl')
