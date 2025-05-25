@@ -245,7 +245,7 @@ def preparacao_dos_dados(df, dict_preparation, is_train=True):
 st.set_page_config(page_title="Predição de Alugueis", layout='wide')
 
 st.header('🏠 Estimação do valor de locação')
-st.write('✍️ Prencha os dados referentes ao imóveis para realizarmos a estimação do valor de locação:')
+st.write('✍️ Preencha os dados referentes ao imóveis para realizarmos a estimação do valor de locação:')
 
 
 df = pd.read_pickle('params/data/df_exp.pkl')
@@ -261,15 +261,15 @@ selectors_and_columns1 = {
 }
 selectors_and_columns2 = {
     'suites': [st.selectbox, 'Qual o número de suítes'],
-    'banheiros': [st.selectbox, 'Qual o número de **banheiros**?'],
+    'banheiros': [st.selectbox, 'Qual o número de banheiros?'],
     'vagas_garagem': [st.selectbox, 'Quantas vagas de garagem?'],
     'sacada': [st.pills, 'Imóvel possui sacada?']
 }
 
 selectors_and_columns3 = {
-    'hidromassagem': [st.pills, 'O imóvel possúi banheira de hidromassagem?'],
-    'mobiliado': [st.pills, 'Imóvel é mobiliado?'],
-    'mobilia_planejada': [st.pills, 'A mobilia é planejada?'],
+    'hidromassagem': [st.pills, 'O imóvel possui banheira de hidromassagem?'],
+    'mobiliado': [st.pills, 'O imóvel é mobiliado?'],
+    'mobilia_planejada': [st.pills, 'Possui mobilia planejada?'],
     'imovel_decorado': [st.pills, 'O imóvel é decorado?']
 }
 selectors_and_columns4 = {
