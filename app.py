@@ -244,6 +244,9 @@ def preparacao_dos_dados(df, dict_preparation, is_train=True):
 
 st.set_page_config(page_title="Predição de Alugueis", layout='wide')
 
+st.header('🏠 Estimação do valor de locação')
+st.write('✍️ Prencha os dados referentes ao imóveis para realizarmos a estimação do valor de locação:')
+
 
 df = pd.read_pickle('params/data/df_exp.pkl')
 
@@ -310,6 +313,7 @@ with col4:
 
 container2 = st.container(border=True)
 
+
 st.header('Dados do Condomínio')
 st.write('Preencha os dados referentes ao condomínio')
 
@@ -352,8 +356,8 @@ if fazer_predicao:
         input = get_dados_wikipedia(input)
         input = feature_engineering(input)
 
-        input['latitude'] = input['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'latitude'))
-        input['longitude'] = input['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'longitude'))
+        # input['latitude'] = input['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'latitude'))
+        # input['longitude'] = input['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'longitude'))
 
         mensagem = 'Carregando modelo...'
         st.write(mensagem)
@@ -369,7 +373,7 @@ if fazer_predicao:
 
         valor_em_reais = round(float(y_pred[0]), 2)
 
-        mensagem = f'Valor do Aluguel + Condomínio estimado em R$: {valor_em_reais}'
+        mensagem = f'Valor total da locação estimado em R$: {valor_em_reais}'
         st.write(mensagem)
 
 else:
