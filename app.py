@@ -5,7 +5,11 @@ from datetime import datetime
 import ast
 import importlib
 import numpy as np
-from my_functions import aux_functions as utils 
+from geopy.geocoders import Nominatim
+import pickle
+from sklearn.preprocessing import StandardScaler, RobustScaler
+
+
 
 def make_filters(data, list_columns=None, selector=None, selectors_and_columns=None):
 
@@ -49,7 +53,7 @@ def feature_engineering(data):
     return data
 
 def get_dados_wikipedia(data):
-    dados_curitiba = utils.get_infos_curitiba()
+    dados_curitiba = pd.read_csv('params/data/dados_curitiba.csv')
 
     ajustes = {
         'ecoville':'mossungue',
@@ -70,20 +74,174 @@ def get_dados_wikipedia(data):
     data = data.dropna()
 
     # tratando dados da wikipedia
-    # df_feature_engineering['area_bairro'] = df_feature_engineering['area_bairro'].astype('float64')
-    # df_feature_engineering['qtd_homens'] = df_feature_engineering['qtd_homens'].astype('int64')
-    # df_feature_engineering['qtd_mulheres'] = df_feature_engineering['qtd_mulheres'].astype('int64')
-    # df_feature_engineering['total'] = df_feature_engineering['total'].astype('int64')
     data['qtd_domicilios_particulares'] = data['qtd_domicilios_particulares'].astype('int64')
     data['renda_media_responsaveis_domicilio'] = data['renda_media_responsaveis_domicilio'].astype('float64')
 
     return data
 
+
+def get_lat_long(lat_long, coordenada):
+    if lat_long:
+        try: 
+            lat_long_list = ast.literal_eval(str(lat_long))
+            match coordenada:
+                case 'latitude':
+                    return lat_long_list[0]
+                case 'longitude':
+                    return lat_long_list[1]
+        except:
+            pass
+
+def obter_lat_long(endereco):
+
+    def get_localization(endereco):
+        geolocator = Nominatim(user_agent="meu_app")
+        localizacao = geolocator.geocode(endereco)
+
+        return localizacao
+
+    def return_lat_long(lat_long):
+        return [lat_long.latitude, lat_long.longitude ]
+    
+    lat_long = get_localization(endereco)
+
+    if lat_long:
+        return return_lat_long(lat_long)
+    else:
+        # print('quebrando endereco')
+        partes_do_endereco = endereco.split(', ')
+        # print(partes_do_endereco)
+        qtd_partes_endereco = len(partes_do_endereco)
+        for i in range(1, qtd_partes_endereco+1):
+            # print(qtd_partes_endereco)
+            # print(f'partes_do_endereco: {partes_do_endereco[0:len(partes_do_endereco) - i]}')
+            # print(f'i: {i}')
+            try:
+                novo_endereco = ' '.join(partes_do_endereco[0:len(partes_do_endereco) - i])
+                # print(f'novo_endereco: {novo_endereco}')
+                lat_long = get_localization(novo_endereco)
+                if lat_long:
+                    return return_lat_long(lat_long)
+                else:
+                    pass
+            except:
+                pass
+
+def save_picked_file(file, name):
+    return pickle.dump(file,open(f'params/{name}.pkl','wb'))
+
+def load_picked_file(name):
+    return pickle.load(open(f'params/{name}.pkl','rb'))
+
 def coordenadas_geograficas(data):
-    data['latitude'] = data['endereco'].apply(lambda x: utils.get_lat_long(utils.obter_lat_long(x), 'latitude'))
-    data['longitude'] = data['endereco'].apply(lambda x: utils.get_lat_long(utils.obter_lat_long(x), 'longitude'))
+    data['latitude'] = data['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'latitude'))
+    data['longitude'] = data['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'longitude'))
 
     return data
+
+def robust_scaler(df, column, train=True):
+
+    data = df.copy()
+
+    if train:
+        scaler = RobustScaler()
+        data[column] = scaler.fit_transform(data[[column]])
+
+        save_picked_file(scaler, f'preparation/robust_scaler_{column}')
+
+    else:
+
+        scaler = load_picked_file(f'preparation/robust_scaler_{column}')
+        data[column] = scaler.transform(data[[column]])
+
+    return data
+
+def standart_scaler(df, column, train=True):
+
+    data = df.copy()
+
+    if train:
+        scaler = StandardScaler()
+        data[column] = scaler.fit_transform(data[[column]])
+
+        save_picked_file(scaler, f'preparation/standart_scaler{column}')
+
+    else:
+
+        scaler = load_picked_file(f'preparation/standart_scaler{column}')
+        data[column] = scaler.transform(data[[column]])
+
+    return data
+
+def target_encode(df, column, train = True):
+    
+    data = df.copy()
+
+    if train:
+        media_por_categoria = data[[column,'valor_total']].groupby(column).agg(total=('valor_total','mean')).reset_index()
+        media_por_categoria['total'] = round(media_por_categoria['total'],2)
+        media_por_categoria = media_por_categoria.set_index(column)['total'].to_dict()
+
+        data[column] = data[column].map(media_por_categoria)
+        save_picked_file(media_por_categoria, f'preparation/target_encode_{column}')
+
+    else:
+        media_por_categoria = load_picked_file(f'preparation/target_encode_{column}')
+        data[column] = data[column].map(media_por_categoria)
+        data.loc[data[column].isna(), column] = data[column].mean()
+
+    return data
+
+def dummie_encode(df, column):
+    
+    data = df.copy()
+
+    data[column] = data[column].map({'Sim':1, 'Não': 0})
+
+    return data
+
+def ciclycal_encode(df, column):
+
+    data = df.copy()
+
+    match column:
+        case 'year':
+            max_value = 2
+        case 'month':
+            max_value = 12
+        case 'day':
+            max_value = 365        
+        case 'week_of_year':
+            max_value = 52
+
+    data[f'{column}_sin'] = data[f'{column}'].apply(lambda x: np.sin(x*(2*np.pi/max_value)))
+    data[f'{column}_cos'] = data[f'{column}'].apply(lambda x: np.cos(x*(2*np.pi/max_value)))
+
+    return data
+
+def preparacao_dos_dados(df, dict_preparation, is_train=True):
+
+    data = df.copy()
+
+    for column, preparation in dict_preparation.items():
+        try:
+            match preparation:
+                case 'standart_scaler':
+                    data = standart_scaler(data, column, train=is_train)
+                case 'robust_scaler':
+                    data = robust_scaler(data, column, train=is_train)
+                case 'target_encode':
+                    data = target_encode(data, column, train=is_train)
+                case 'dummie_encode':
+                    data = dummie_encode(data, column)   
+                case 'ciclycal_encode':
+                    data = ciclycal_encode(data, column)  
+                case np.log1p:
+                    data[f'{column}'] = np.log1p(data[f'{column}'])
+        except:
+            pass
+
+    return data     
 
 st.set_page_config(page_title="Predição de Alugueis", layout='wide')
 
@@ -172,7 +330,7 @@ with col7:
 
 
 st.header('Estimação de Valores')
-st.write('Clique no botão para estimar o valor do alguel + condomínio do imóvel')
+st.write('Clique no botão para estimar o valor do aluguel + condomínio do imóvel')
 
 fazer_predicao = st.button("Estimar valores")
 
@@ -197,16 +355,16 @@ if fazer_predicao:
         input = get_dados_wikipedia(input)
         input = feature_engineering(input)
 
-        input['latitude'] = input['endereco'].apply(lambda x: utils.get_lat_long(utils.obter_lat_long(x), 'latitude'))
-        input['longitude'] = input['endereco'].apply(lambda x: utils.get_lat_long(utils.obter_lat_long(x), 'longitude'))
+        input['latitude'] = input['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'latitude'))
+        input['longitude'] = input['endereco'].apply(lambda x: get_lat_long(obter_lat_long(x), 'longitude'))
 
         mensagem = 'Carregando modelo...'
         st.write(mensagem)
-        dict_preparation = utils.load_picked_file(name='preparation/dict_data_preparation')
-        features_selected = utils.load_picked_file(name='preparation/features_selected')
-        best_model = utils.load_picked_file(name='models/best_model')
+        dict_preparation = load_picked_file(name='preparation/dict_data_preparation')
+        features_selected = load_picked_file(name='preparation/features_selected')
+        best_model = load_picked_file(name='models/best_model')
 
-        input_transformed = utils.preparacao_dos_dados(df=input, dict_preparation=dict_preparation, is_train=False)
+        input_transformed = preparacao_dos_dados(df=input, dict_preparation=dict_preparation, is_train=False)
 
         mensagem = 'Fazendo predição'
         st.write(mensagem)
