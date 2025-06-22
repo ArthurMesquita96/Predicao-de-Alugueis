@@ -8,6 +8,9 @@ import re
 import ast
 import pickle
 import os
+import pyarrow.parquet as pq
+import joblib
+
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -324,10 +327,10 @@ def tratamento_dados_apolar(data):
 
     # Atributos
     df['area'] = df['atributos'].apply(lambda x: x if pd.isna(x)  else busca_substring('m²', x.split(', '))).str.replace('m²','')
-    df['banheiros'] = df['atributos'].apply(lambda x: x if pd.isna(x)  else busca_substring('banheiro', x.split(', '))).str.replace('banheiro','').str.replace('s','').fillna(0)
-    df['quartos'] = df['atributos'].apply(lambda x: x if pd.isna(x)  else busca_substring('quarto', x.split(', '))).str.replace('quarto','').str.replace('s','').fillna(0)
-    df['suites'] = df['atributos'].apply(lambda x: x if pd.isna(x)  else busca_substring('suite', x.split(', '))).str.replace('suite','').str.replace('s','').fillna(0)
-    df['vagas_garagem'] = df['atributos'].apply(lambda x: x if pd.isna(x) else busca_substring('vaga', x.split(', '))).str.replace('vaga','').str.replace('s','').fillna(0)
+    df['banheiros'] = df['atributos'].apply(lambda x: 0 if pd.isna(x)  else busca_substring('banheiro', x.split(', '))).str.replace('banheiro','').str.replace('s','').fillna(0).astype('int64')
+    df['quartos'] = df['atributos'].apply(lambda x: 0 if pd.isna(x)  else busca_substring('quarto', x.split(', '))).str.replace('quarto','').str.replace('s','').fillna(0).astype('int64')
+    df['suites'] = df['atributos'].apply(lambda x: 0 if pd.isna(x)  else busca_substring('suite', x.split(', '))).str.replace('suite','').str.replace('s','').fillna(0).astype('int64')
+    df['vagas_garagem'] = df['atributos'].apply(lambda x: 0 if pd.isna(x) else busca_substring('vaga', x.split(', '))).str.replace('vaga','').str.replace('s','').fillna(0).astype('int64')
 
     # Detalhes do imóvel/condomínio
     df['mobiliado'] = df['descricao'].apply(lambda x: np.nan if pd.isna(x) else 'Sim' if verifica_existencia_palavras(['mobilia', 'moveis planejados', 'mobiliado', 'semi-mobiliado','sofa', 'armario', 'armarios', 'tv', 'cama', 'mesa', 'cadeiras', 'eletrodomesticos'], unidecode(x.lower())) else 'Não')
@@ -490,16 +493,16 @@ def ml_error_cv(model_name, y, yhat, k):
 ## Data Preparation
 
 def save_picked_file(file, name):
-    return pickle.dump(file,open(f'params/preparation/{name}.pkl','wb'))
+    return joblib.dump(file,f'params/{name}.pkl', compress=3)
 
 def load_picked_file(name):
-    return pickle.load(open(f'params/preparation/{name}.pkl','rb'))
+    return joblib.load(f'params/{name}.pkl')
 
 def save_parquet_file(file, name):
-    return file.to_parquet(f'params/data/{name}.parquet')
+    return pq.write_table(file, f'params/{name}.parquet')
 
 def load_parquet_file(name):
-    return pd.read_parquet(f'params/preparation/{name}.parquet')
+    return pq.read_table(f'params/{name}.parquet')
 
 def robust_scaler(df, column, train=True):
 
