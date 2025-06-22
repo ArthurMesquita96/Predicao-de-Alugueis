@@ -465,7 +465,6 @@ def plot_matrix(data, columns_features, n_rows, n_cols, plot, sort_by= None, plo
     if save_image:
         salvar_grafico(nome_imagem, pasta_destino, figura=plt.gcf(), formato=formato, dpi=dpi)
             
-
 def ml_error(model_name, y, yhat):
     mae = mt.mean_absolute_error(y,yhat)
     mape = mt.mean_absolute_percentage_error(y,yhat)
@@ -495,6 +494,12 @@ def save_picked_file(file, name):
 
 def load_picked_file(name):
     return pickle.load(open(f'params/preparation/{name}.pkl','rb'))
+
+def save_parquet_file(file, name):
+    return file.to_parquet(f'params/data/{name}.parquet')
+
+def load_parquet_file(name):
+    return pd.read_parquet(f'params/preparation/{name}.parquet')
 
 def robust_scaler(df, column, train=True):
 
