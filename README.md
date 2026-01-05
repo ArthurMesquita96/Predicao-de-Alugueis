@@ -65,5 +65,5 @@ Comparado ao modelo baseline (valor médio por m² por bairro), o modelo final a
 
 ## Produto Final
 
-Para fazer uma estimativa do valor final de locação com o modelo final, [acesse aqui](https://predicao-de-alugueis-5b442gzpt8xlwacs4n397w.streamlit.app/)
+Para fazer uma estimativa do valor final de locação com o modelo final, [acesse aqui](https://predicao-de-alugueis-app-zijuyqqyf76ofh2wwwwp3r.streamlit.app/)
 
